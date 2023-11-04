@@ -1,8 +1,8 @@
 {
-    "name": "Test Tool",
-    "author": "Ultimaker B.V.",
+    "name": "Model Scale Tool",
+    "author": "Ultimaker B.V., BJIKEN",
     "version": "1.0.1",
-    "description": "Provides the Test tool.",
+    "description": "Provides the Model Scale tool.",
     "api": 7,
     "i18n-catalog": "uranium"
 }
