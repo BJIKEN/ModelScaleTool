@@ -60,7 +60,7 @@ Item
         Label
         {
             height: UM.Theme.getSize("setting_control").height;
-            text: "1:";
+            text: "Starting Scale 1:";
             font: UM.Theme.getFont("default");
             color: UM.Theme.getColor("default");
             verticalAlignment: Text.AlignVCenter;
@@ -71,7 +71,7 @@ Item
         Label
         {
             height: UM.Theme.getSize("setting_control").height;
-            text: "1:";
+            text: "Desired Scale 1:";
             font: UM.Theme.getFont("default");
             color: UM.Theme.getColor("default"); // This is intentional. The internal axis are switched.
             verticalAlignment: Text.AlignVCenter;
@@ -79,22 +79,12 @@ Item
             width: Math.ceil(contentWidth) //Make sure that the grid cells have an integer width.
         }
 
-        Label
-        {
-            height: UM.Theme.getSize("setting_control").height;
-            text: "Z";
-            font: UM.Theme.getFont("default");
-            color: UM.Theme.getColor("y_axis"); // This is intentional. The internal axis are switched.
-            verticalAlignment: Text.AlignVCenter;
-            renderType: Text.NativeRendering
-            width: Math.ceil(contentWidth) //Make sure that the grid cells have an integer width.
-        }
+
         TextField
         {
             id: xTextField
             width: UM.Theme.getSize("setting_control").width;
             height: UM.Theme.getSize("setting_control").height;
-            property string unit: "mm";
             style: UM.Theme.styles.text_field;
             text: xText
             validator: DoubleValidator
@@ -105,9 +95,7 @@ Item
 
             onEditingFinished:
             {
-                var modified_text = text.replace(",", ".") // User convenience. We use dots for decimal values
-                UM.ActiveTool.setProperty("X", modified_text);
-		UM.ActiveTool.setProperty("SC",modified_text);
+                
             }
             onActiveFocusChanged:
             {
@@ -125,7 +113,6 @@ Item
             id: yTextField
             width: UM.Theme.getSize("setting_control").width;
             height: UM.Theme.getSize("setting_control").height;
-            property string unit: "mm";
             style: UM.Theme.styles.text_field;
             text: yText
             validator: DoubleValidator
@@ -136,10 +123,7 @@ Item
 
             onEditingFinished:
             {
-                var modified_text = text.replace(",", ".") // User convenience. We use dots for decimal values
-		var modified_other = xTextField.text.replace(",", ".")
-		var combinedText = modified_text.concat("/",modified_other)
-                UM.ActiveTool.setProperty("Y", combinedText);
+               
             }
 
             onActiveFocusChanged:
@@ -151,95 +135,31 @@ Item
                 }
             }
             Keys.onBacktabPressed: selectTextInTextfield(xTextField)
-            Keys.onTabPressed: selectTextInTextfield(zTextField)
+            //Keys.onTabPressed: selectTextInTextfield(zTextField) How do we make it select a button?
         }
-        TextField
-        {
-            id: zTextField
-            width: UM.Theme.getSize("setting_control").width;
-            height: UM.Theme.getSize("setting_control").height;
-            property string unit: "mm";
-            style: UM.Theme.styles.text_field;
-            text: zText
-            validator: DoubleValidator
-            {
-                decimals: 4
-                locale: "en_US"
-            }
-            onEditingFinished:
-            {
-                var modified_text = text.replace(",", ".") // User convenience. We use dots for decimal values
-                UM.ActiveTool.setProperty("Z", modified_text);
-            }
-
-            onActiveFocusChanged:
-            {
-                if(!activeFocus && text =="")
-                {
-                    zText = 0.1; // Yeaaah i know. We need to change it to something else so we can force it to 0
-                    zText = 0;
-                }
-            }
-            Keys.onBacktabPressed: selectTextInTextfield(yTextField)
-            Keys.onTabPressed: selectTextInTextfield(xTextField)
-        }
+        
     }
 
-    CheckBox
+    Button
     {
-        property var checkbox_state: 0; // if the state number is 2 then the checkbox has "partially" state
+        id: applyModelScale
 
-        // temporary property, which is used to recalculate checkbox state and keeps reference of the
-        // binging object. If the binding object changes then checkBox state will be updated.
-        property var temp_checkBox_value:{
-
-            checkbox_state = getCheckBoxState()
-
-            // returning the lockPosition the propery will keep reference, for updating
-            return base.lockPosition
-        }
-
-        function getCheckBoxState(){
-
-            if (base.lockPosition == "true"){
-                lockPositionCheckbox.checked = true
-                return 1;
-            }
-            else if (base.lockPosition == "partially"){
-                lockPositionCheckbox.checked = true
-                return 2;
-            }
-            else{
-                lockPositionCheckbox.checked = false
-                return 0;
-            }
-        }
-
-
-        id: lockPositionCheckbox
         anchors.top: textfields.bottom
         anchors.topMargin: UM.Theme.getSize("default_margin").height;
         anchors.left: textfields.left
         anchors.leftMargin: UM.Theme.getSize("default_margin").width
 
-        text: catalog.i18nc("@option:check","checkbox");
-        style: UM.Theme.styles.partially_checkbox;
+        //: Reset Rotation tool button
+	text: "Convert Model Scale"
+        style: UM.Theme.styles.toolbox_action_button
+        z: 2
 
         onClicked: {
-
-            // If state is partially, then set Checked
-            if (checkbox_state == 2){
-                lockPositionCheckbox.checked = true
-                UM.ActiveTool.setProperty("LockPosition", true);
-            }
-            else{
-                UM.ActiveTool.setProperty("LockPosition", lockPositionCheckbox.checked);
-            }
-
-            // After clicking the base.lockPosition is not refreshed, fot this reason manually update the state
-            // Set zero because only 2 will show partially icon in checkbox
-            checkbox_state = 0;
-        }
+		var yTextValue = yTextField.text.replace(",", ".") // User convenience. We use dots for decimal values
+		var xTextValue = xTextField.text.replace(",", ".")
+		var combinedText = yTextValue.concat("/",xTextValue)
+                UM.ActiveTool.setProperty("ModelScale", combinedText);
+	}
     }
 
     // We have to use indirect bindings, as the values can be changed from the outside, which could cause breaks
@@ -259,17 +179,12 @@ Item
         value: base.roundFloat(UM.ActiveTool.properties.getValue("Y"), 4)
     }
 
-    Binding
-    {
-        target: base
-        property: "zText"
-        value:base.roundFloat(UM.ActiveTool.properties.getValue("Z"), 4)
-    }
 
-    Binding
-    {
-        target: base
-        property: "lockPosition"
-        value: UM.ActiveTool.properties.getValue("LockPosition")
-    }
+
+    //Binding
+   // {
+   //     target: base
+   //     property: "applyModelScale"
+  //      value: UM.ActiveTool.properties.getValue("LockPosition")
+ //   }
 }
