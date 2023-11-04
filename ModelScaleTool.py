@@ -19,17 +19,16 @@ from UM.Tool import Tool
 from UM.Logger import Logger #Adding messages to the log.
 
 try:
-    from . import TestToolHandle
+    from . import ModelScaleToolHandle
 except (ImportError, SystemError):
     import TranslateToolHandle  # type: ignore  # This fixes the tests not being able to import.
 
 
 DIMENSION_TOLERANCE = 0.0001  # Tolerance value used for comparing dimensions from the UI.
 DIRECTION_TOLERANCE = 0.0001  # Used to check if you're perpendicular on some axis
-START_SCALE = 5 #cant be here
-DESIRED_SCALE = 1
 
-class TestTool(Tool):
+
+class ModelScaleTool(Tool):
     """Provides the tool to move meshes and groups.
 
     The tool exposes a ToolHint to show the distance of the current operation.
@@ -38,7 +37,7 @@ class TestTool(Tool):
     def __init__(self) -> None:
         super().__init__()
 
-        self._handle = TestToolHandle.TestToolHandle() #type: TestToolHandle.TestToolHandle #Because for some reason MyPy thinks this variable contains Optional[ToolHandle].
+        self._handle = ModelScaleToolHandle.ModelScaleToolHandle() #type: ModelScaleToolHandle.ModelScaleToolHandle #Because for some reason MyPy thinks this variable contains Optional[ToolHandle].
         self._enabled_axis = [ToolHandle.XAxis, ToolHandle.YAxis, ToolHandle.ZAxis]
 
         self._grid_snap = False
@@ -115,90 +114,27 @@ class TestTool(Tool):
             parsed_value = float(0)
         return parsed_value
 
-    def setX(self, x: str) -> None:
-        """Set the x-location of the selected object(s) by translating relative to
 
-        the selection bounding box center.
-        :param x: Location in mm.
-        """
-        parsed_x = self._parseFloat(x)
-        bounding_box = Selection.getBoundingBox()
-        """
-        if not Float.fuzzyCompare(parsed_x, float(bounding_box.center.x), DIMENSION_TOLERANCE):
-            selected_nodes = self._getSelectedObjectsWithoutSelectedAncestors()
-            if len(selected_nodes) > 1:
-                op = GroupedOperation()
-                for selected_node in self._getSelectedObjectsWithoutSelectedAncestors():
-                    world_position = selected_node.getWorldPosition()
-                    new_position = world_position.set(x = parsed_x + (world_position.x - bounding_box.center.x))
-                    node_op = TranslateOperation(selected_node, new_position, set_position = True)
-                    op.addOperation(node_op)
-                op.push()
-            else:
-                for selected_node in self._getSelectedObjectsWithoutSelectedAncestors():
-                    world_position = selected_node.getWorldPosition()
-                    selected_node.scale(Vector(parsed_x,1,1))
-                    new_position = world_position.set(x = parsed_x + (world_position.x - bounding_box.center.x))
-                    TranslateOperation(selected_node, new_position, set_position = True).push()
-        """
-
-        START_SCALE = parsed_x
-        Logger.log("i",("StartScale is: "+str(START_SCALE)))
         
-        self._controller.toolOperationStopped.emit(self)
-
-    def setSC(self, p: str) -> None:
-        parsed_p = self._parseFloat(p)
-        START_SCALE = parsed_p
-        Logger.log("i","Parsing p")
-    
-    def setY(self, y: str) -> None:
-        """Set the y-location of the selected object(s) by translating relative to
-
-        the selection bounding box center.
-        :param y: Location in mm.
-        """
+    def setModelScale(self, y: str) -> None:
         splitInput =  y.split("/")
-        parsed_y = self._parseFloat(splitInput[0])
-        parsed_x = self._parseFloat(splitInput[1])
+        parsed_Desired = abs(self._parseFloat(splitInput[0]))#take absolute value so dont have to worry about accidental negatives
+        parsed_Start = abs(self._parseFloat(splitInput[1]))
         bounding_box = Selection.getBoundingBox()
-        """
-        if not Float.fuzzyCompare(parsed_y, float(bounding_box.center.z), DIMENSION_TOLERANCE):
-            selected_nodes = self._getSelectedObjectsWithoutSelectedAncestors()
-            if len(selected_nodes) > 1:
-                op = GroupedOperation()
-                for selected_node in selected_nodes:
-                    # Note; The switching of z & y is intentional. We display z as up for the user,
-                    # But store the data in openGL space.
-                    world_position = selected_node.getWorldPosition()
-                    new_position = world_position.set(z = parsed_y + (world_position.z - bounding_box.center.z))
-                    node_op = TranslateOperation(selected_node, new_position, set_position = True)
-                    op.addOperation(node_op)
-                op.push()
-            else:
-                for selected_node in selected_nodes:
-                    world_position = selected_node.getWorldPosition()
-                    new_position = world_position.set(z = parsed_y + (world_position.z - bounding_box.center.z))
-                    TranslateOperation(selected_node, new_position, set_position = True).push()
-        """
-        if not Float.fuzzyCompare(parsed_y, float(bounding_box.center.z), DIMENSION_TOLERANCE):
+
+        if (parsed_Desired * parsed_Start)!=0: # Multiply both values together to make sure neither are 0
             selected_nodes = self._getSelectedObjectsWithoutSelectedAncestors()
             if len(selected_nodes) > 1:
                 op = GroupedOperation()
                 # add functionality for more than one object at a time
             else:
                 for selected_node in selected_nodes:
-                    DESIRED_SCALE = parsed_y
-                    START_SCALE = parsed_x
-                    SCALE_FACTOR = (START_SCALE)/(DESIRED_SCALE)
-                    #selected_node.scale(Vector(0.5,0.5,0.5))
+                    SCALE_FACTOR = (parsed_Start)/(parsed_Desired)
                     selected_node.scale(Vector(SCALE_FACTOR,SCALE_FACTOR,SCALE_FACTOR))
-                    
-                    OUTSTR = "SCALE_FACTOR is: "+ str(SCALE_FACTOR)+ " by factoring start: "+str(START_SCALE)+" and desired:" +str(DESIRED_SCALE)
-                    Logger.log("i", OUTSTR)
-        self._controller.toolOperationStopped.emit(self)
-        
-
+                    #OUTSTR = "SCALE_FACTOR is: "+ str(SCALE_FACTOR)+ " by factoring start: "+str(START_SCALE)+" and desired:" +str(DESIRED_SCALE)
+                    #Logger.log("i", OUTSTR)
+            
+            self._controller.toolOperationStopped.emit(self)
 
     def setEnabledAxis(self, axis: List[int]) -> None:
         """Set which axis/axes are enabled for the current translate operation
