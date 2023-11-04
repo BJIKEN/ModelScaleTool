@@ -6,7 +6,7 @@ from UM.Mesh.MeshBuilder import MeshBuilder
 from UM.Scene.ToolHandle import ToolHandle
 
 
-class TestToolHandle(ToolHandle):
+class ModelScaleToolHandle(ToolHandle):
     """Provides the two block-shaped toolhandles connected with a line for each axis for the translate tool"""
 
     def __init__(self, parent = None):
